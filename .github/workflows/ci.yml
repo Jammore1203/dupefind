@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+      - name: Unit tests
+        run: zig build test --summary all
+      - name: Smoke test
+        run: |
+          zig build -Doptimize=ReleaseSafe
+          mkdir -p t/a t/b && echo same > t/a/1 && echo same > t/b/2 && echo diff > t/b/3
+          ./zig-out/bin/dupefind t | tee out.txt
+          grep -q "1 duplicate group" out.txt
